@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ded319e1f8f89251bed6b73cf283a2851404c42e1a216b8f37e3f163525ef9e3
+-- hash: 523866efd4c59917b50341ae128673a9f6d2e0e995004da34be4b9dbedc866f2
 
 name:           yaimdba
 version:        0.1.0.0
@@ -36,6 +36,8 @@ library
       base >=4.7 && <5
     , mongoDB
     , mtl
+    , scotty
+    , text
   default-language: Haskell2010
 
 executable yaimdba-exe
@@ -49,6 +51,8 @@ executable yaimdba-exe
       base >=4.7 && <5
     , mongoDB
     , mtl
+    , scotty
+    , text
     , yaimdba
   default-language: Haskell2010
 
@@ -64,5 +68,7 @@ test-suite yaimdba-test
       base >=4.7 && <5
     , mongoDB
     , mtl
+    , scotty
+    , text
     , yaimdba
   default-language: Haskell2010

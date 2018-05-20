@@ -10,6 +10,10 @@ import Database.MongoDB    (Action, Document, Document, Value, access,
                             host, insertMany, master, project, rest,
                             select, sort, (=:))
 import Control.Monad.Trans (liftIO)
+import Web.Scotty
+
+import Data.Monoid (mconcat)
+import qualified Data.Text.Lazy as L
 
 main :: IO ()
 main = do
@@ -26,4 +30,13 @@ newYorkTeams :: Action IO [Document]
 newYorkTeams = rest =<< find (select ["tconst" =: "tt0701041"] "title.ratings") {sort = ["averageRating" =: 1]}
 
 printDocs :: String -> [Document] -> Action IO ()
-printDocs title docs = liftIO $ putStrLn title >> mapM_ (print . exclude ["_id"]) docs
+printDocs title docs = liftIO $ do
+    putStrLn title
+    x <- mapM (print . exclude ["_id"]) docs
+    print $ docs !! 0
+    scotty 3000 $
+        get "/:word" $ do
+            {- beam <- param "word" -}
+            json $ L.pack $ show $ docs !! 0
+
+
