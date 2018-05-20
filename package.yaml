@@ -25,6 +25,12 @@ dependencies:
 - mongoDB
 - scotty
 - text
+- bytestring
+- aeson
+- bson
+- scientific
+- vector
+- unordered-containers
 
 library:
   source-dirs: src

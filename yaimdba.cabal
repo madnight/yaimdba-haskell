@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 523866efd4c59917b50341ae128673a9f6d2e0e995004da34be4b9dbedc866f2
+-- hash: 34a71f6754182100befe238070afb278ce497f3e0c297a946fe850ec1bd7bddb
 
 name:           yaimdba
 version:        0.1.0.0
@@ -33,11 +33,17 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
+    , bson
+    , bytestring
     , mongoDB
     , mtl
+    , scientific
     , scotty
     , text
+    , unordered-containers
+    , vector
   default-language: Haskell2010
 
 executable yaimdba-exe
@@ -48,11 +54,17 @@ executable yaimdba-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
+    , bson
+    , bytestring
     , mongoDB
     , mtl
+    , scientific
     , scotty
     , text
+    , unordered-containers
+    , vector
     , yaimdba
   default-language: Haskell2010
 
@@ -65,10 +77,16 @@ test-suite yaimdba-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
+    , bson
+    , bytestring
     , mongoDB
     , mtl
+    , scientific
     , scotty
     , text
+    , unordered-containers
+    , vector
     , yaimdba
   default-language: Haskell2010
