@@ -6,9 +6,9 @@ module Main where
 import Lib
 
 import Database.MongoDB    (Action, Document, Document, Value, access,
-                            close, connect, delete, exclude, find, valueAt, typed,
-                            host, insertMany, master, project, rest,
-                            select, sort, (=:))
+                            close, connect, delete, exclude, find, valueAt,
+                            typed, host, insertMany, master, project, rest,
+                            select, include, merge, sort, (=:))
 import Control.Monad.Trans (liftIO)
 import Web.Scotty
 
@@ -29,10 +29,10 @@ main = do
             e <- liftIO $ access pipe master "local" (episodes beam)
             {- json $ L.pack $ show e -}
             let z o = liftIO $ access pipe master "local" (ratings o)
-            x <- z ((e))
+            x <- z e
             {- x <- forM (getIds e) z -}
             {- json $ map aesonify (flatten x) -}
-            json $ map aesonify x
+            json $ map aesonify (flatten (fmap (\y -> mergeByID y x) e))
             {- text $ getIds e -}
     close pipe
 {- "tt0701041" -}
@@ -40,6 +40,11 @@ main = do
 getIds :: [Document] -> [String]
 getIds x = map (typed . valueAt "tconst") x
 
+mergeByID :: Document -> [Document] -> [Document]
+mergeByID y [] = [y]
+mergeByID y (x:xs) = if (valueAt "tconst" y) == (valueAt "tconst" x)
+                     then (merge y x) : mergeByID y xs
+                     else x : mergeByID y xs
 
 rating :: String -> Action IO [Document]
 rating id =
@@ -47,8 +52,7 @@ rating id =
 
 ratings :: [Document] -> Action IO [Document]
 ratings id =
-    rest =<< find (select ["$or" =: id] "title.ratings")
-
+    rest =<< find (select ["$or" =: (fmap (include ["tconst"]) id)] "title.ratings")
 
 
 titleToID :: String -> Action IO [Document]
@@ -59,5 +63,5 @@ episodes :: String -> Action IO [Document]
 episodes id =
     rest =<< find (select ["parentTconst" =: id] "title.episode") {
         {- sort = ["seasonNumber" =: 1, "episodeNumber" =: 1], -}
-        project = ["_id" =: 0, "parentTconst" =: 0, "seasonNumber" =: 0, "episodeNumber" =: 0]
+        project = ["_id" =: 0]
         }

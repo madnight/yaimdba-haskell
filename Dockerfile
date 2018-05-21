@@ -1,11 +1,11 @@
 FROM pritunl/archlinux:2018-05-12
 
-RUN pacman -S --noconfirm mongodb-tools nodejs npm wget
+RUN pacman -S --noconfirm mongodb mongodb-tools nodejs npm wget
 RUN npm install -g tsv-to-json2
 
-COPY src/provision.sh /
+COPY src/download.sh /
 
-RUN bash provision.sh fetch_datasets
+RUN bash download.sh
 
-CMD bash provision.sh mongo_import
+CMD bash provision.sh
 
