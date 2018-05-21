@@ -7,5 +7,7 @@ COPY src/download.sh /
 
 RUN bash download.sh
 
+COPY src/provision.sh /
+
 CMD bash provision.sh
 

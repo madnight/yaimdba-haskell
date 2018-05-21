@@ -1,9 +1,10 @@
-titles=("ratings" "principals" "episode" "crew" "basics" "akas")
+titles=("ratings" "episode" "principals"  "crew" "basics" "akas")
 
-sleep 20 # wait for mongodb to become ready
+sleep 10 # wait for mongodb to become ready
+mongo local --host mongo --eval "printjson(db.serverStatus())"
+mongo local --host mongo --eval "db.dropDatabase()"
 for i in "${titles[@]}"
 do
-  mongo local --eval "printjson(db.serverStatus())"
-  mongoimport --host=mongo --db local --upsertFields tconst --collection title."$i" --type json --file title."$i".json --jsonArray || exit 1
-  mongo local --eval "db.getCollection('title."$i"').createIndex({tconst: 1})"
+  mongoimport --host=mongo --db local --collection title."$i" --type json --file title."$i".json --jsonArray || exit 1
+  mongo local --host mongo --eval "db.getCollection('title."$i"').createIndex({tconst: 1})"
 done

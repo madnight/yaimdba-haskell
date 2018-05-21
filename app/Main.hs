@@ -4,17 +4,16 @@
 module Main where
 
 import Lib
-
 import Database.MongoDB    (Action, Document, Document, Value, access,
                             close, connect, delete, exclude, find, valueAt,
                             typed, host, insertMany, master, project, rest,
                             select, include, merge, sort, (=:))
 import Control.Monad.Trans (liftIO)
 import Web.Scotty
-
 import Data.Monoid (mconcat)
 import qualified Data.Text.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as Char8
+import Data.Text.Internal
 import Control.Monad (forM)
 
 flatten :: [[a]] -> [a]
@@ -25,34 +24,37 @@ main = do
     pipe <- connect (host "127.0.0.1")
     scotty 3000 $
         get "/:word" $ do
-            beam <- param "word"
-            e <- liftIO $ access pipe master "local" (episodes beam)
-            {- json $ L.pack $ show e -}
-            let z o = liftIO $ access pipe master "local" (ratings o)
-            x <- z e
-            {- x <- forM (getIds e) z -}
-            {- json $ map aesonify (flatten x) -}
-            json $ map aesonify (flatten (fmap (\y -> mergeByID y x) e))
-            {- text $ getIds e -}
+            imdbID <- param "word"
+            let fetch = ((liftIO . access pipe master "local") .)
+            e <- fetch episodes imdbID
+            r <- fetch ratings e
+            t <- fetch titles e
+            json $ aesonify <$> foldr combine e [r, t]
     close pipe
-{- "tt0701041" -}
+    where
+        combine x = ((`mergeByID` x) =<<)
 
-getIds :: [Document] -> [String]
-getIds x = map (typed . valueAt "tconst") x
 
 mergeByID :: Document -> [Document] -> [Document]
-mergeByID y [] = [y]
-mergeByID y (x:xs) = if (valueAt "tconst" y) == (valueAt "tconst" x)
-                     then (merge y x) : mergeByID y xs
-                     else x : mergeByID y xs
+mergeByID y [] = []
+mergeByID y (x:xs)
+    | valueAt "tconst" y == valueAt "tconst" x =
+        merge y x : mergeByID y xs
+    | otherwise = mergeByID y xs
 
-rating :: String -> Action IO [Document]
-rating id =
-    rest =<< find (select ["$or" =: [["tconst" =: id], ["tconst" =: "tt0096697"]]] "title.ratings")
+
+findSelect :: Text -> [Document] -> Action IO [Document]
+findSelect collection id =
+    rest =<< find (select ["$or" =: include ["tconst"] <$> id] collection) {
+            project = ["_id" =: 0]
+        }
+
 
 ratings :: [Document] -> Action IO [Document]
-ratings id =
-    rest =<< find (select ["$or" =: (fmap (include ["tconst"]) id)] "title.ratings")
+ratings = findSelect "title.ratings"
+
+titles :: [Document] -> Action IO [Document]
+titles = findSelect "title.basics"
 
 
 titleToID :: String -> Action IO [Document]
@@ -62,6 +64,9 @@ titleToID id =
 episodes :: String -> Action IO [Document]
 episodes id =
     rest =<< find (select ["parentTconst" =: id] "title.episode") {
-        {- sort = ["seasonNumber" =: 1, "episodeNumber" =: 1], -}
-        project = ["_id" =: 0]
+            project = ["_id" =: 0]
         }
+
+
+
+        {- sort = ["seasonNumber" =: 1, "episodeNumber" =: 1], -}
