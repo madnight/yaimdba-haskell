@@ -11,24 +11,18 @@ import Database.MongoDB    (Action, Document, Document, Value, access,
 import Control.Monad.Trans (liftIO)
 import Web.Scotty
 import Data.Monoid (mconcat)
-import qualified Data.Text.Lazy as L
-import qualified Data.ByteString.Lazy.Char8 as Char8
 import Data.Text.Internal
-import Control.Monad (forM)
-
-flatten :: [[a]] -> [a]
-flatten xs = (\z n -> foldr (\x y -> foldr z y x) n xs) (:) []
 
 main :: IO ()
 main = do
     pipe <- connect (host "127.0.0.1")
+    let fetch = ((liftIO . access pipe master "local") .)
     scotty 3000 $
         get "/:word" $ do
             imdbID <- param "word"
-            let fetch = ((liftIO . access pipe master "local") .)
             e <- fetch episodes imdbID
-            r <- fetch ratings e
-            t <- fetch titles e
+            r <- fetch (findSelect "title.ratings") e
+            t <- fetch (findSelect "title.basics") e
             json $ aesonify <$> foldr combine e [r, t]
     close pipe
     where
@@ -45,17 +39,10 @@ mergeByID y (x:xs)
 
 findSelect :: Text -> [Document] -> Action IO [Document]
 findSelect collection id =
-    rest =<< find (select ["$or" =: include ["tconst"] <$> id] collection) {
+    rest =<< find (
+        select ["$or" =: include ["tconst"] <$> id] collection) {
             project = ["_id" =: 0]
         }
-
-
-ratings :: [Document] -> Action IO [Document]
-ratings = findSelect "title.ratings"
-
-titles :: [Document] -> Action IO [Document]
-titles = findSelect "title.basics"
-
 
 titleToID :: String -> Action IO [Document]
 titleToID id =
@@ -67,6 +54,4 @@ episodes id =
             project = ["_id" =: 0]
         }
 
-
-
-        {- sort = ["seasonNumber" =: 1, "episodeNumber" =: 1], -}
+{- sort = ["seasonNumber" =: 1, "episodeNumber" =: 1], -}
