@@ -1,6 +1,7 @@
-titles=("ratings" "episode" "principals"  "crew" "basics" "akas")
+titles=("ratings" "episode" "basics")
 
 sleep 10 # wait for mongodb to become ready
+# sleep 9999999 # wait for mongodb to become ready
 mongo local --host mongo --eval "printjson(db.serverStatus())"
 mongo local --host mongo --eval "db.dropDatabase()"
 for i in "${titles[@]}"

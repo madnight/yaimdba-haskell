@@ -13,8 +13,6 @@ import Web.Scotty
 import Data.Monoid (mconcat)
 import Data.Text.Internal
 
-flatten xs = (\z n -> foldr (\x y -> foldr z y x) n xs) (:) []
-
 main :: IO ()
 main = do
     pipe <- connect (host "127.0.0.1")
@@ -23,30 +21,30 @@ main = do
 
         get "/getID/:word" $ do
             title <- param "word"
-            id <- fetch titleToID title
-            json $ aesonify (flatten id)
+            i <- fetch titleToID title
+            r <- fetch (find' "title.ratings") i
+            json $ aesonify <$> merge' i r
 
         get "/:word" $ do
             imdbID <- param "word"
             e <- fetch episodes imdbID
-            r <- fetch (findSelect "title.ratings") e
-            t <- fetch (findSelect "title.basics") e
-            json $ aesonify <$> foldr combine e [r, t]
+            r <- fetch (find' "title.ratings") e
+            t <- fetch (find' "title.basics") e
+            json $ aesonify <$> foldr merge' e [r, t]
+
     close pipe
-    where
-        combine x = ((`mergeByID` x) =<<)
+
+merge' :: [Document] -> [Document] -> [Document]
+merge' = (=<<) . merge''
+    where merge'' [] y = []
+          merge'' (x:xs) y
+            | valueAt "tconst" y == valueAt "tconst" x =
+                merge x y : merge'' xs y
+            | otherwise = merge'' xs y
 
 
-mergeByID :: Document -> [Document] -> [Document]
-mergeByID y [] = []
-mergeByID y (x:xs)
-    | valueAt "tconst" y == valueAt "tconst" x =
-        merge y x : mergeByID y xs
-    | otherwise = mergeByID y xs
-
-
-findSelect :: Text -> [Document] -> Action IO [Document]
-findSelect collection id =
+find' :: Text -> [Document] -> Action IO [Document]
+find' collection id =
     rest =<< find (
         select ["$or" =: include ["tconst"] <$> id] collection) {
             project = ["_id" =: 0]
