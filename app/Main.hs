@@ -13,11 +13,19 @@ import Web.Scotty
 import Data.Monoid (mconcat)
 import Data.Text.Internal
 
+flatten xs = (\z n -> foldr (\x y -> foldr z y x) n xs) (:) []
+
 main :: IO ()
 main = do
     pipe <- connect (host "127.0.0.1")
     let fetch = ((liftIO . access pipe master "local") .)
-    scotty 3000 $
+    scotty 3000 $ do
+
+        get "/getID/:word" $ do
+            title <- param "word"
+            id <- fetch titleToID title
+            json $ aesonify (flatten id)
+
         get "/:word" $ do
             imdbID <- param "word"
             e <- fetch episodes imdbID
@@ -46,7 +54,7 @@ findSelect collection id =
 
 titleToID :: String -> Action IO [Document]
 titleToID id =
-    rest =<< find (select ["title" =: id] "title.akas")
+    rest =<< find (select ["primaryTitle" =: id] "title.basics")
 
 episodes :: String -> Action IO [Document]
 episodes id =
