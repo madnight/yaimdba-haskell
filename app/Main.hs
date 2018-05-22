@@ -15,7 +15,7 @@ import Data.Text.Internal
 
 main :: IO ()
 main = do
-    pipe <- connect (host "127.0.0.1")
+    pipe <- connect (host "mongo")
     let fetch = ((liftIO . access pipe master "local") .)
     scotty 3000 $ do
 

@@ -1,7 +1,17 @@
-version: '3'
+version: '2'
 services:
+
   provision:
     build: .
+    links:
+      - mongo
+    depends_on:
+      - mongo
+
+  web:
+    build:
+      context: .
+      dockerfile: src/Dockerfile
     links:
       - mongo
     depends_on:
